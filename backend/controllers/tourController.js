@@ -1,14 +1,33 @@
 import Tour from "../models/Tour.js";
+import redisClient from "../redisClient.js";
 
-//get all tours
+
+
+// Get all tours with Redis caching and pagination
 export const getAllTours = async (req, res) => {
-  //pagination
-  const page = parseInt(req.query.page);
+  // Pagination
+  const page = parseInt(req.query.page) || 0;
+  const cacheKey = `all_tours_page_${page}`;
+  const cachedData = await redisClient.get(cacheKey);
+
+  if (cachedData) {
+    console.log("Cache hit");
+    const tours = JSON.parse(cachedData);
+    return res.status(200).json({
+      success: true,
+      count: tours.length,
+      message: "Tours fetched successfully (from cache)",
+      data: tours,
+    });
+  }
+
+  console.log("Cache miss");
   try {
     const tours = await Tour.find({})
       .populate("reviews")
       .skip(page * 8)
       .limit(8);
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(tours)); // Cache the tours data for 1 hour
     res.status(200).json({
       success: true,
       count: tours.length,

@@ -10,7 +10,6 @@ import {
   getTourCount,
 } from "./../controllers/tourController.js";
 import { verifyAdmin } from "../utils/verifyToken.js";
-
 const router = express.Router();
 
 //create new tour
@@ -29,6 +28,7 @@ router.get("/search/getTourBySearch", getTourBySearch);
 router.get("/search/getFeaturedTour", getFeaturedTour);
 //get tour counts
 router.get("/search/getTourCount", getTourCount);
+
 export default router;
 
 

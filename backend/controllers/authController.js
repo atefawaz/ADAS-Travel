@@ -6,6 +6,8 @@ import {
   registerValidator,
 } from "../validation/authValidate.js";
 
+import redisClient from "../redisClient.js";
+
 
 
 //register
@@ -48,76 +50,125 @@ export const register = async (req, res) => {
 
 
 
-//login
+// //login
+// export const login = async (req, res) => {
+//   const email = req.body.email;
+//   try {
+//     const { error } = loginValidator.validate(req.body, {
+//       abortEarly: false,
+//     });
+//     if (error) {
+//       const errors = error.details.map((err) => err.message);
+//       return res.status(400).json({
+//         message: errors,
+//       });
+//     }
+    
+//     const user = await User.findOne({ email });
+//     //if user is not found
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+
+    
+//     // if user is found then check the password or compare the password
+
+//     const checkCorrectPassword = await bcrypt.compare(
+//       req.body.password,
+//       user.password
+//     );
+//     //if password is incorrect
+//     if (!checkCorrectPassword) {
+//       res.status(401).json({
+//         success: false,
+//         message: "Incorrect email or password",
+//       });
+//     }
+
+//     const { password, role, ...rest } = user._doc;
+
+//     //create jwt token
+
+//     const token = jwt.sign(
+//       {
+//         id: user._id,
+//         role: user.role,
+//       },
+//       process.env.JWT_SECRET_KEY,
+//       { expiresIn: "15d" }
+//     );
+
+//     //sent token to browser response to client
+//     res
+//       .cookie("accessToken", token, {
+//         httpOnly: true,
+//         expires: token.expiresIn,
+//       })
+//       .status(200)
+//       .json({
+//         token,
+//         success: true,
+//         message: "User logged in successfully",
+//         data: { ...rest },
+//       });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to login user",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+// Login
 export const login = async (req, res) => {
   const email = req.body.email;
   try {
-    const { error } = loginValidator.validate(req.body, {
-      abortEarly: false,
-    });
+    const { error } = loginValidator.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((err) => err.message);
-      return res.status(400).json({
-        message: errors,
-      });
+      return res.status(400).json({ message: errors });
     }
-    
+
+    const cacheKey = `user_${email}`;
+    const cachedData = await redisClient.get(cacheKey);
+
+    if (cachedData) {
+      console.log("Cache hit");
+      const user = JSON.parse(cachedData);
+      if (await bcrypt.compare(req.body.password, user.password)) {
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET_KEY, { expiresIn: "15d" });
+        return res
+          .cookie("accessToken", token, { httpOnly: true, expires: token.expiresIn })
+          .status(200)
+          .json({ token, success: true, message: "User logged in successfully", data: { ...user, password: undefined } });
+      } else {
+        return res.status(401).json({ success: false, message: "Incorrect email or password" });
+      }
+    }
+
+    console.log("Cache miss");
     const user = await User.findOne({ email });
-    //if user is not found
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-
-    
-    // if user is found then check the password or compare the password
-
-    const checkCorrectPassword = await bcrypt.compare(
-      req.body.password,
-      user.password
-    );
-    //if password is incorrect
-    if (!checkCorrectPassword) {
-      res.status(401).json({
-        success: false,
-        message: "Incorrect email or password",
-      });
+    if (!await bcrypt.compare(req.body.password, user.password)) {
+      return res.status(401).json({ success: false, message: "Incorrect email or password" });
     }
 
-    const { password, role, ...rest } = user._doc;
-
-    //create jwt token
-
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "15d" }
-    );
-
-    //sent token to browser response to client
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(user)); // Cache the user data for 1 hour
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET_KEY, { expiresIn: "15d" });
     res
-      .cookie("accessToken", token, {
-        httpOnly: true,
-        expires: token.expiresIn,
-      })
+      .cookie("accessToken", token, { httpOnly: true, expires: token.expiresIn })
       .status(200)
-      .json({
-        token,
-        success: true,
-        message: "User logged in successfully",
-        data: { ...rest },
-      });
+      .json({ token, success: true, message: "User logged in successfully", data: { ...user._doc, password: undefined } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to login user",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Failed to login user", error: error.message });
   }
 };
