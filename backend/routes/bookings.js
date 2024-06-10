@@ -12,3 +12,6 @@ router.post("/", verifyUser, createBooking);
 router.get("/:id", verifyUser, getDetailBooking);
 router.get("/", verifyAdmin, getAllBookings);
 export default router;
+
+
+
