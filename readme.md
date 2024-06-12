@@ -1,4 +1,3 @@
-
 # ADAS (Atef,Druv,Abed,Sathya) TRAVEL APP 
 
 ## Introduction
