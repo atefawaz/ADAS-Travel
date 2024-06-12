@@ -134,7 +134,7 @@ Redis is used for the following purposes:
 - **Session Management**: User sessions are managed by storing session data in-memory, allowing for quick access and enhancing user experience.
 - **Storing Tours and User Logins**: Tours are stored in Redis to make access faster. User login information is also cached to speed up the authentication process.
 
-- cache miss --> data is being stored
+- cache miss --> data requested by the application is not found in the cache.
 - cache hit --> data is retrieved from redis and not from the mongodb 
 
 #### Advantages : improve performance , speed , access faster to tours ...etc
