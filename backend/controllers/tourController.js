@@ -221,3 +221,35 @@ export const getTourCount = async (req, res) => {
     });
   }
 };
+
+
+export const getMostBookedTours = async (req, res) => {
+  const session = driver.session();
+  try {
+    const result = await session.run(
+      'MATCH (t:Tour) ' +
+      'RETURN t.id AS tourId, t.bookings AS bookings ' +
+      'ORDER BY t.bookings DESC ' +
+      'LIMIT 10'
+    );
+
+    const tours = result.records.map(record => ({
+      tourId: record.get('tourId'),
+      bookings: record.get('bookings')
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: "Most booked tours fetched successfully",
+      data: tours,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch most booked tours",
+      error: err.message,
+    });
+  } finally {
+    await session.close();
+  }
+};

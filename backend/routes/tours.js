@@ -8,6 +8,7 @@ import {
   getTourBySearch,
   getFeaturedTour,
   getTourCount,
+  getMostBookedTours,
 } from "./../controllers/tourController.js";
 import { verifyAdmin } from "../utils/verifyToken.js";
 const router = express.Router();
@@ -28,6 +29,7 @@ router.get("/search/getTourBySearch", getTourBySearch);
 router.get("/search/getFeaturedTour", getFeaturedTour);
 //get tour counts
 router.get("/search/getTourCount", getTourCount);
+router.get('/most-booked', getMostBookedTours);
 
 export default router;
 
