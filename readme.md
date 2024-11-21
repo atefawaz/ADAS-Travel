@@ -1,4 +1,4 @@
-# ADAS (Atef,Druv,Abed,Sathya) TRAVEL APP 
+# TRAVEL APP 
 
 ## Introduction
 This project is a robust Node.js backend application designed to serve as the backbone of a web application. It provides a structured and scalable environment to manage server-side operations efficiently. The application follows the Model-View-Controller (MVC) pattern, promoting separation of concerns and maintainability. Key features include user authentication, API endpoints for CRUD operations, and integration with Redis for caching and session management.
